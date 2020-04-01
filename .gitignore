@@ -1,0 +1,11 @@
+config.py
+.json
+.vscode
+.DS_Store
+venv
+.json
+*.pyc
+*.pyo
+__pycache__/
+*.py[cod]
+requirements.txt

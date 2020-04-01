@@ -219,7 +219,7 @@ def process_line_json(line):
                 properties.append({'property_type': property_value,
                                    'insert_id': value_def(parsed['$insert_id']),
                                    'key': value_def(key),
-                                   'value': value})
+                                   'value': unicode(value)})
 
     return json.dumps(data), properties
 
