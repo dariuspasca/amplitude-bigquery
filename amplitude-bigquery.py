@@ -95,63 +95,65 @@ def value_paying(value):
 def load_into_bigquery(file, table):
     job_config = bigquery.LoadJobConfig()
 
-    #You can also use Auto-detect schema detection
-    #More info here: https://cloud.google.com/bigquery/docs/schema-detect
-    #It my trigger an error if in the table of @events_properties sample data there are null/empty values
-    #job_config.autodetect = True 
-     
-    if table == 'events_properties':
-        job_config.schema = [
-            bigquery.SchemaField("property_type", "STRING"),
-            bigquery.SchemaField("insert_id", "STRING"),
-            bigquery.SchemaField("key", "STRING"),
-            bigquery.SchemaField("value", "STRING"),
-        ]
-    else:
-        job_config.schema = [
-            bigquery.SchemaField("client_event_time", "TIMESTAMP"),
-            bigquery.SchemaField("ip_address", "STRING"),
-            bigquery.SchemaField("library", "STRING"),
-            bigquery.SchemaField("dma", "STRING"),
-            bigquery.SchemaField("user_creation_time", "TIMESTAMP"),
-            bigquery.SchemaField("insert_id", "STRING"),
-            bigquery.SchemaField("schema", "INTEGER"),
-            bigquery.SchemaField("processed_time", "TIMESTAMP"),
-            bigquery.SchemaField("client_upload_time", "TIMESTAMP"),
-            bigquery.SchemaField("app", "INTEGER"),
-            bigquery.SchemaField("user_id", "STRING"),
-            bigquery.SchemaField("city", "STRING"),
-            bigquery.SchemaField("event_type", "STRING"),
-            bigquery.SchemaField("device_carrier", "STRING"),
-            bigquery.SchemaField("location_lat", "STRING"),
-            bigquery.SchemaField("event_time", "TIMESTAMP"),
-            bigquery.SchemaField("platform", "STRING"),
-            bigquery.SchemaField("is_attribution_event", "BOOLEAN"),
-            bigquery.SchemaField("os_version", "INTEGER"),
-            bigquery.SchemaField("paying", "BOOLEAN"),
-            bigquery.SchemaField("amplitude_id", "INTEGER"),
-            bigquery.SchemaField("device_type", "STRING"),
-            bigquery.SchemaField("sample_rate", "STRING"),
-            bigquery.SchemaField("device_manufacturer", "STRING"),
-            bigquery.SchemaField("start_version", "STRING"),
-            bigquery.SchemaField("uuid", "STRING"),
-            bigquery.SchemaField("version_name", "STRING"),
-            bigquery.SchemaField("location_lng", "STRING"),
-            bigquery.SchemaField("server_upload_time", "TIMESTAMP"),
-            bigquery.SchemaField("event_id", "INTEGER"),
-            bigquery.SchemaField("device_id", "STRING"),
-            bigquery.SchemaField("device_family", "STRING"),
-            bigquery.SchemaField("os_name", "STRING"),
-            bigquery.SchemaField("adid", "STRING"),
-            bigquery.SchemaField("amplitude_event_type", "STRING"),
-            bigquery.SchemaField("device_brand", "STRING"),
-            bigquery.SchemaField("country", "STRING"),
-            bigquery.SchemaField("device_model", "STRING"),
-            bigquery.SchemaField("language", "STRING"),
-            bigquery.SchemaField("region", "STRING"),
-            bigquery.SchemaField("session_id", "INTEGER"),
-            bigquery.SchemaField("idfa", "STRING")
-        ]
+    # You can also use Auto-detect schema detection
+    # More info here: https://cloud.google.com/bigquery/docs/schema-detect
+    #job_config.autodetect = True
+
+    job_config.schema = [
+        bigquery.SchemaField("client_event_time", "TIMESTAMP"),
+        bigquery.SchemaField("ip_address", "STRING"),
+        bigquery.SchemaField("library", "STRING"),
+        bigquery.SchemaField("dma", "STRING"),
+        bigquery.SchemaField("user_creation_time", "TIMESTAMP"),
+        bigquery.SchemaField("insert_id", "STRING"),
+        bigquery.SchemaField("schema", "INTEGER"),
+        bigquery.SchemaField("processed_time", "TIMESTAMP"),
+        bigquery.SchemaField("client_upload_time", "TIMESTAMP"),
+        bigquery.SchemaField("app", "INTEGER"),
+        bigquery.SchemaField("user_id", "STRING"),
+        bigquery.SchemaField("city", "STRING"),
+        bigquery.SchemaField("event_type", "STRING"),
+        bigquery.SchemaField(
+            "properties",
+            "RECORD",
+            mode="REPEATED",
+            fields=[
+                bigquery.SchemaField(
+                    "property_type", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("key", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("value", "STRING", mode="NULLABLE"),
+            ],
+        ),
+        bigquery.SchemaField("device_carrier", "STRING"),
+        bigquery.SchemaField("location_lat", "STRING"),
+        bigquery.SchemaField("event_time", "TIMESTAMP"),
+        bigquery.SchemaField("platform", "STRING"),
+        bigquery.SchemaField("is_attribution_event", "BOOLEAN"),
+        bigquery.SchemaField("os_version", "INTEGER"),
+        bigquery.SchemaField("paying", "BOOLEAN"),
+        bigquery.SchemaField("amplitude_id", "INTEGER"),
+        bigquery.SchemaField("device_type", "STRING"),
+        bigquery.SchemaField("sample_rate", "STRING"),
+        bigquery.SchemaField("device_manufacturer", "STRING"),
+        bigquery.SchemaField("start_version", "STRING"),
+        bigquery.SchemaField("uuid", "STRING"),
+        bigquery.SchemaField("version_name", "STRING"),
+        bigquery.SchemaField("location_lng", "STRING"),
+        bigquery.SchemaField("server_upload_time", "TIMESTAMP"),
+        bigquery.SchemaField("event_id", "INTEGER"),
+        bigquery.SchemaField("device_id", "STRING"),
+        bigquery.SchemaField("device_family", "STRING"),
+        bigquery.SchemaField("os_name", "STRING"),
+        bigquery.SchemaField("adid", "STRING"),
+        bigquery.SchemaField("amplitude_event_type", "STRING"),
+        bigquery.SchemaField("device_brand", "STRING"),
+        bigquery.SchemaField("country", "STRING"),
+        bigquery.SchemaField("device_model", "STRING"),
+        bigquery.SchemaField("language", "STRING"),
+        bigquery.SchemaField("region", "STRING"),
+        bigquery.SchemaField("session_id", "INTEGER"),
+        bigquery.SchemaField("idfa", "STRING")
+    ]
     job_config.max_bad_records = 25
     job_config.source_format = 'NEWLINE_DELIMITED_JSON'
     job = bigquery_client.load_table_from_uri(import_json_url(file_json(file)),
@@ -167,6 +169,7 @@ def process_line_json(line):
     if parsed:
         data = {}
         properties = []
+        data['properties'] = []
         data['client_event_time'] = value_def(parsed['client_event_time'])
         data['ip_address'] = value_def(parsed['ip_address'])
         data['library'] = value_def(parsed['library'])
@@ -211,17 +214,16 @@ def process_line_json(line):
         data['region'] = value_def(parsed['region'])
         data['session_id'] = value_def(parsed['session_id'])
         data['idfa'] = value_def(parsed['idfa'])
-        
+
         for property_value in PROPERTIES:
             for key, value in parsed[property_value].items():
                 value = 'True' if value is True else value
                 value = 'False' if value is False else value
-                properties.append({'property_type': property_value,
-                                   'insert_id': value_def(parsed['$insert_id']),
-                                   'key': value_def(key),
-                                   'value': unicode(value)})
+                data['properties'].append({'property_type': property_value,
+                                           'key': value_def(key),
+                                           'value': unicode(value)})
 
-    return json.dumps(data), properties
+    return json.dumps(data)
 
 
 ###############################################################################
@@ -258,37 +260,26 @@ def start(YESTERDAY):
         # Create a new JSON import file
         import_events_file = open(
             "amplitude/{id}/".format(id=ACCOUNT_ID) + file_json(file), "w+")
-        import_properties_file = open("amplitude/{id}/".format(id=ACCOUNT_ID) + "properties_" +
-                                      file_json(file), "w+")
 
         # Loop through the JSON lines
         for line in lines:
-            events_line, properties_lines = process_line_json(line)
+            events_line = process_line_json(line)
             import_events_file.write(events_line + "\r\n")
-            for property_line in properties_lines:
-                import_properties_file.write(
-                    json.dumps(property_line) + "\r\n")
 
         # Close the file and upload it for import to Google Cloud Storage
         import_events_file.close()
-        import_properties_file.close()
         upload_file_to_gcs("amplitude/{id}/".format(id=ACCOUNT_ID) + file_json(file), file_json(file),
                            'import')
-        upload_file_to_gcs("amplitude/{id}/".format(id=ACCOUNT_ID) + "properties_" + file_json(file),
-                           "properties_" + file_json(file), 'import')
 
         # Import data from Google Cloud Storage into Google BigQuery
         global dataset_ref
         dataset_ref = bigquery_client.dataset('amplitude')
         load_into_bigquery(file, 'events$' + YESTERDAY)
-        load_into_bigquery("properties_" + file, 'events_properties')
 
         print("Imported: {file}".format(file=file_json(file)))
 
         # Remove JSON file
         remove_file(file_json(file), "amplitude/{id}".format(id=ACCOUNT_ID))
-        remove_file("properties_" + file_json(file),
-                    "amplitude/{id}".format(id=ACCOUNT_ID))
 
     # Remove the original zipfile
     remove_file("amplitude.zip")
