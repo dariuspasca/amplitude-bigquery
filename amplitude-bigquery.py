@@ -239,13 +239,11 @@ def start(YESTERDAY):
 
     # Initiate Google BigQuery
     global bigquery_client
-    bigquery_client = bigquery.Client.from_service_account_json(
-        'service_account.json')
+    bigquery_client = bigquery.Client()
 
     # Initiate Google Cloud Storage
     global storage_client
-    storage_client = storage.Client.from_service_account_json(
-        'service_account.json')
+    storage_client = storage.Client()
     upload_file_to_gcs('amplitude.zip', YESTERDAY + '.zip', 'export')
 
     # Loop through all new files, unzip them & remove the .gz
